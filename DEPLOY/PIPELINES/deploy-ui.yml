@@ -1,0 +1,41 @@
+name: Azure Static Web Apps CI/CD
+
+pr:
+  branches:
+    include:
+      - main
+trigger:
+  branches:
+    include:
+      - main
+
+jobs:
+- job: build_and_deploy_job
+  displayName: Build and Deploy Job
+  condition: or(eq(variables['Build.Reason'], 'Manual'),or(eq(variables['Build.Reason'], 'PullRequest'),eq(variables['Build.Reason'], 'IndividualCI')))
+  pool:
+    vmImage: ubuntu-latest
+  variables:
+  - group: VG-UI-prod
+  steps:
+  - checkout: self
+    submodules: true
+  - task: AzureStaticWebApp@0
+    inputs:
+      azure_static_web_apps_api_token: $(AZURE_STATIC_WEB_APPS_API_TOKEN_PURPLE_WATER_0E18DCD1E)
+###### Repository/Build Configurations - These values can be configured to match your app requirements. ######
+# For more information regarding Static Web App workflow configurations, please visit: https://aka.ms/swaworkflowconfig
+      app_location: "/APPS/ReactAppUI" # App source code path
+      api_location: "" # Api source code path - optional
+      output_location: "build" # Built app content directory - optional
+    env:
+      REACT_APP_SEND_REPORT_APIKEY: $(REACT_APP_SEND_REPORT_APIKEY)
+      REACT_APP_AI_PROJECTS_INFO_URL: $(REACT_APP_AI_PROJECTS_INFO_URL)
+      REACT_APP_AI_REPORT_URL: $(REACT_APP_AI_REPORT_URL)
+      REACT_APP_SEND_REPORT_URL: $(REACT_APP_SEND_REPORT_URL)
+      REACT_APP_SERVICE_API_URL: $(REACT_APP_SERVICE_API_URL)
+      REACT_APP_REDIRECT_URI: $(REACT_APP_REDIRECT_URI)
+      REACT_APP_ENVIRONMENT: $(REACT_APP_ENVIRONMENT)
+      REACT_APP_LOG_LEVEL: $(REACT_APP_LOG_LEVEL)     
+###### End of Repository/Build Configurations ######
+

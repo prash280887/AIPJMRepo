@@ -1,0 +1,389 @@
+# trigger:
+#   - main
+#   - develop
+trigger: none
+pr: none
+
+pool:
+  vmImage: 'windows-latest'
+
+variables:
+  - group: VG-Backend-prod
+  - name: buildConfiguration
+    value: 'Release'
+  - name: azureSubscriptionId
+    value: 'e1a31661-0278-41a2-9294-0cad4192eefb'
+  - name: resourceGroupName
+    value: 'RG-WinBuild1-TeamIntelliTrace'
+  - name: appServiceNameReactWebApp
+    value: 'aipjmweb01'
+  - name: appServiceNameWebAPIService
+    value: 'aipjmappservice02'
+  - name: appServiceNameAgenticAIService
+    value: 'aipjmaiservice01'
+  - name: appServiceNameReportingService
+    value: 'aipjmreportservice02'
+  - name: projectPathAgenticAIService
+    value: 'APPS/BackendServices/AgenticAIService/AgenticAIService.csproj'
+  - name: projectPathWebAPIService
+    value: 'APPS/BackendServices/WebAPIService/WebApiService.csproj'
+  - name: projectPathReportingService
+    value: 'APPS/BackendServices/ReportingService/ReportingService.csproj'
+  - name: projectPathReactWebApp
+    value: 'APPS/ReactAppUI/'
+  - name: buildOutputPath
+    value: '$(Build.ArtifactStagingDirectory)'
+  - name: DEPLOY_AgenticAIService
+    value: '$(VAR_DEPLOY_AgenticAIService)'
+  - name: DEPLOY_WebAPIService
+    value: '$(VAR_DEPLOY_WebAPIService)'
+  - name: DEPLOY_ReportingService
+    value: '$(VAR_DEPLOY_ReportingService)'
+
+
+
+stages:
+  - stage: Build
+    displayName: 'Build AgenticAIService'
+    jobs:
+      - job: BuildJob
+        displayName: 'Build and Package AgenticAIService'
+      #  condition: eq($(DEPLOY_AgenticAIService), 'True')
+        steps:
+          # Install Azure CLI
+          - task: Bash@3
+            displayName: 'Install Azure CLI'
+            inputs:
+              targetType: 'inline'
+              script: |
+                curl -sL https://aka.ms/InstallAzureCLIDeb | bash
+                az --version
+
+          # Setup .NET
+          - task: UseDotNet@2
+            displayName: 'Setup .NET 8'
+            inputs:
+              version: '8.0.x'
+              packageType: 'sdk'
+
+          # Restore NuGet packages
+          - task: DotNetCoreCLI@2
+            displayName: 'Restore NuGet packages'
+            inputs:
+              command: 'restore'
+              projects: '$(projectPathAgenticAIService)'
+
+          # Build the project
+          - task: DotNetCoreCLI@2
+            displayName: 'Build Project: AgenticAIService'
+            inputs:
+              command: 'build'
+              projects: '$(projectPathAgenticAIService)'
+              arguments: '--configuration $(buildConfiguration) --no-restore'
+
+          # Publish the project
+          - task: DotNetCoreCLI@2
+            displayName: 'Publish Project : AgenticAIService'
+            inputs:
+              command: 'publish'
+              projects: '$(projectPathAgenticAIService)'
+              publishWebProjects: false
+              arguments: '--configuration $(buildConfiguration) --output $(buildOutputPath)'
+              zipAfterPublish: true
+
+          # Publish build artifact
+          - task: PublishBuildArtifacts@1
+            displayName: 'Publish Artifact: AgenticAIService'
+            inputs:
+              pathToPublish: '$(buildOutputPath)'
+              artifactName: 'AgenticAIService-drop'
+
+      - job: BuildWebAPIServiceJob
+        displayName: 'Build and Package WebAPIService'
+   #    condition: eq($(DEPLOY_WebAPIService), 'True')
+        steps:
+          # Setup .NET
+          - task: UseDotNet@2
+            displayName: 'Setup .NET 8'
+            inputs:
+              version: '8.0.x'
+              packageType: 'sdk'
+
+          # Restore NuGet packages
+          - task: DotNetCoreCLI@2
+            displayName: 'Restore NuGet packages: WebAPIService'
+            inputs:
+              command: 'restore'
+              projects: '$(projectPathWebAPIService)'
+
+          # Build the project
+          - task: DotNetCoreCLI@2
+            displayName: 'Build Project: WebAPIService'
+            inputs:
+              command: 'build'
+              projects: '$(projectPathWebAPIService)'
+              arguments: '--configuration $(buildConfiguration) --no-restore'
+
+          # Publish the project
+          - task: DotNetCoreCLI@2
+            displayName: 'Publish Project: WebAPIService'
+            inputs:
+              command: 'publish'
+              projects: '$(projectPathWebAPIService)'
+              publishWebProjects: false
+              arguments: '--configuration $(buildConfiguration) --output $(buildOutputPath)'
+              zipAfterPublish: true
+
+          # Publish build artifact
+          - task: PublishBuildArtifacts@1
+            displayName: 'Publish Artifact: WebAPIService'
+            inputs:
+              pathToPublish: '$(buildOutputPath)'
+              artifactName: 'WebAPIService-drop'
+
+      - job: BuildReportingServiceJob
+        displayName: 'Build and Package ReportingService (Function App)'
+   #     condition: eq($(DEPLOY_ReportingService), 'True')
+        steps:
+          # Setup .NET
+          - task: UseDotNet@2
+            displayName: 'Setup .NET 8'
+            inputs:
+              version: '8.0.x'
+              packageType: 'sdk'
+
+          # Restore NuGet packages
+          - task: DotNetCoreCLI@2
+            displayName: 'Restore NuGet packages: ReportingService'
+            inputs:
+              command: 'restore'
+              projects: '$(projectPathReportingService)'
+
+          # Build the project
+          - task: DotNetCoreCLI@2
+            displayName: 'Build Project: ReportingService'
+            inputs:
+              command: 'build'
+              projects: '$(projectPathReportingService)'
+              arguments: '--configuration $(buildConfiguration) --no-restore'
+
+          # Publish the project
+          - task: DotNetCoreCLI@2
+            displayName: 'Publish Project: ReportingService'
+            inputs:
+              command: 'publish'
+              projects: '$(projectPathReportingService)'
+              publishWebProjects: false
+              arguments: '--configuration $(buildConfiguration) --output $(buildOutputPath)'
+              zipAfterPublish: true
+
+          # Publish build artifact
+          - task: PublishBuildArtifacts@1
+            displayName: 'Publish Artifact: ReportingService'
+            inputs:
+              pathToPublish: '$(buildOutputPath)'
+              artifactName: 'ReportingService-drop'
+
+      # - job: BuildReactWebAppJob
+      #   displayName: 'Build and Package React Web App'
+      #   steps:
+      #     # Setup Node.js 24 LTS
+      #     - task: NodeTool@0
+      #       displayName: 'Setup Node.js 24 LTS'
+      #       inputs:
+      #         versionSpec: '24.x'
+
+      #     # Create .env file for React app
+      #     - task: Bash@3
+      #       displayName: 'Create .env file'
+      #       inputs:
+      #         targetType: 'inline'
+      #         workingDirectory: '$(projectPathReactWebApp)'
+      #         script: |
+      #           cat > .env << EOF
+      #           REACT_APP_ENVIRONMENT=$(REACT_APP_ENVIRONMENT)
+      #           REACT_APP_SERVICE_API_URL=$(REACT_APP_SERVICE_API_URL)
+      #           REACT_APP_AI_REPORT_URL=$(REACT_APP_AI_REPORT_URL) 
+      #           REACT_APP_AI_PROJECTS_INFO_URL=$(REACT_APP_AI_PROJECTS_INFO_URL)
+      #           REACT_APP_SEND_REPORT_URL=$(REACT_APP_SEND_REPORT_URL)
+      #           REACT_APP_LOG_LEVEL=$(REACT_APP_LOG_LEVEL)
+      #           EOF
+      #           echo "Environment file created successfully"
+      #           echo $(projectPathReactWebApp)
+      #           cat .env
+
+      #     # Install npm dependencies
+      #     # - task: Bash@3
+      #     #   displayName: 'Install npm dependencies'
+      #     #   inputs:
+      #     #     targetType: 'inline'
+      #     #     workingDirectory: '$(projectPathReactWebApp)'
+      #     #     script: |
+      #     #       npm install
+      #     #       npm list
+
+      #     # Build React app
+      #     - task: Bash@3
+      #       displayName: 'Build React App'
+      #       inputs:
+      #         targetType: 'inline'
+      #         workingDirectory: '$(projectPathReactWebApp)'
+      #         script: |
+      #           echo "Building React app..."
+      #           echo "DISABLE_ESLINT_PLUGIN is set to: $DISABLE_ESLINT_PLUGIN"
+      #           echo $(projectPathReactWebApp)
+      #           export DISABLE_ESLINT_PLUGIN=true
+      #           npm install
+      #           CI=false npm run build
+      #           ls ./build || dir build 
+
+      #     # Copy build output to staging directory
+      #     - task: CopyFiles@2
+      #       displayName: 'Copy build output to staging'
+      #       inputs:
+      #         sourceFolder: '$(projectPathReactWebApp)build'
+      #         contents: '**'
+      #         targetFolder: '$(buildOutputPath)/ReactWebApp'
+
+      #     # Publish build artifact
+      #     - task: PublishBuildArtifacts@1
+      #       displayName: 'Publish Artifact: ReactWebApp'
+      #       inputs:
+      #         pathToPublish: '$(buildOutputPath)'
+      #         artifactName: 'ReactWebApp-drop'
+
+  - stage: Deploy
+    displayName: 'Deploy to Azure App Service'
+    dependsOn: Build
+    condition: succeeded()
+    jobs:
+      - deployment: DeployJob
+        displayName: 'Deploy to Cloud'
+        environment: 'Production'
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                # Download AgenticAIService artifact
+                - task: DownloadBuildArtifacts@0
+                  displayName: 'Download Build Artifact: AgenticAIService'
+                  inputs:
+                    buildType: 'current'
+                    downloadType: 'single'
+                    artifactName: 'AgenticAIService-drop'
+                    downloadPath: '$(Pipeline.Workspace)'
+
+                # Download WebAPIService artifact
+                - task: DownloadBuildArtifacts@0
+                  displayName: 'Download Build Artifact: WebAPIService'
+                  inputs:
+                    buildType: 'current'
+                    downloadType: 'single'
+                    artifactName: 'WebAPIService-drop'
+                    downloadPath: '$(Pipeline.Workspace)'
+
+                # Download ReportingService artifact
+                - task: DownloadBuildArtifacts@0
+                  displayName: 'Download Build Artifact: ReportingService'
+                  inputs:
+                    buildType: 'current'
+                    downloadType: 'single'
+                    artifactName: 'ReportingService-drop'
+                    downloadPath: '$(Pipeline.Workspace)'
+
+                # # Download ReactWebApp artifact
+                # - task: DownloadBuildArtifacts@0
+                #   displayName: 'Download Build Artifact: ReactWebApp'
+                #   inputs:
+                #     buildType: 'current'
+                #     downloadType: 'single'
+                #     artifactName: 'ReactWebApp-drop'
+                #     downloadPath: '$(Pipeline.Workspace)'
+
+                # Authenticate with Azure using Service Principal
+                - task: AzureCLI@2
+                  displayName: 'Azure CLI Login with Service Principal'
+                  inputs:
+                    azureSubscription: '$(VAR_ServiceConnectionName)'
+                    scriptType: 'bash'
+                    scriptLocation: 'inlineScript'
+                    inlineScript: |
+                      echo "Authenticated with Azure using Service Principal"
+                      az account show
+                      az account set --subscription $(azureSubscriptionId)
+
+                # Deploy AgenticAIService to Azure App Service
+                - task: AzureRmWebAppDeployment@4
+                  displayName: 'Deploy to App Service: AgenticAIService'
+ #                 condition: eq($(DEPLOY_AgenticAIService), 'True')
+                  inputs:
+                    ConnectedServiceName: '$(VAR_ServiceConnectionName)'
+                    WebAppName: '$(appServiceNameAgenticAIService)'
+                    ResourceGroupName: '$(resourceGroupName)'
+                    package: '$(Pipeline.Workspace)/AgenticAIService-drop/*.zip'
+                    deploymentMethod: 'auto'
+                    AppSettings: |
+                      -AgenticAIAzureBoard__ApiKey=$(AZURE_AI_API_KEY_aipjm)
+                      -AzureBoardConnector__0__personalAccessToken=$(AZURE_BOARD_PAT_DEVAZZURE)
+                      -AzureBoardConnector__1__personalAccessToken=$(AZURE_BOARD_PAT_WINWIRE)
+                      -AzureBoardConnector__2__personalAccessToken=$(AZURE_BOARD_PAT_WINWIRE)
+
+
+               # Deploy WebAPIService to Azure App Service
+                - task: AzureRmWebAppDeployment@4
+                  displayName: 'Deploy to App Service: WebAPIService'
+ #                 condition: eq($(DEPLOY_WebAPIService), 'True')
+                  inputs:
+                    ConnectedServiceName: '$(VAR_ServiceConnectionName)'
+                    WebAppName: '$(appServiceNameWebAPIService)'
+                    ResourceGroupName: '$(resourceGroupName)'
+                    package: '$(Pipeline.Workspace)/WebAPIService-drop/*.zip'
+                    deploymentMethod: 'auto'
+
+              #  Deploy ReportingService to Azure Function App
+                - task: AzureFunctionApp@1
+                  displayName: 'Deploy to Function App: ReportingService'
+  #                condition: eq($(DEPLOY_ReportingService), 'True')
+                  inputs:
+                    azureSubscription: '$(VAR_ServiceConnectionName)'
+                    appType: 'functionApp'
+                    appName: '$(appServiceNameReportingService)'
+                    package: '$(Pipeline.Workspace)/ReportingService-drop/*.zip'
+                    deploymentMethod: 'zipDeploy'
+                    AppSettings: |
+                      -AzureWebJobsStorage=$(AZURE_FUNCTION_APP_STORAGE_aipjm)
+                      -AgenticAIService_BaseUrl=$(AGENTIC_AI_SERVICE_BASEURL_aipjm)
+                      -SendGridApiKey=$(SENDGRID_API_KEY)
+                      -SmtpFromEmail=${SMTP_FROM_EMAIL_aipjm}
+                      -SmtpToEmail=${SMTP_TO_EMAIL_aipjm}
+                      -SmtpCcEmail=${SMTP_CC_EMAIL_aipjm}
+                      -SmtpBccEmail=${SMTP_BCC_EMAIL_aipjm}
+
+              # #  Deploy ReactWebApp to Azure App Service
+              #   - task: AzureRmWebAppDeployment@4
+              #     displayName: 'Deploy to App Service: ReactWebApp'
+              #     inputs:
+              #       ConnectedServiceName: '$(VAR_ServiceConnectionName)'
+              #       WebAppName: '$(appServiceNameReactWebApp)'
+              #       ResourceGroupName: '$(resourceGroupName)'
+              #       package: '$(Pipeline.Workspace)/ReactWebApp-drop'
+              #       deploymentMethod: 'auto'
+
+              #   # Verify deployment
+                - task: AzureCLI@2
+                  displayName: 'Verify Deployment'
+                  inputs:
+                    azureSubscription: '$(VAR_ServiceConnectionName)'
+                    scriptType: 'bash'
+                    scriptLocation: 'inlineScript'
+                    inlineScript: |
+                      echo "Verifying deployment..."
+                      echo "Checking Web App Services..."
+                      az webapp show --name $(appServiceNameWebAPIService) --resource-group $(resourceGroupName) --query "state"
+                      echo "Checking Agentic AI Service..."
+                      az webapp show --name $(appServiceNameAgenticAIService) --resource-group $(resourceGroupName) --query "state"
+                      echo "Checking Function App..."
+                      az functionapp show --name $(appServiceNameReportingService) --resource-group $(resourceGroupName) --query "state"
+                      echo "Deployment verification complete for all services"
+
+                
