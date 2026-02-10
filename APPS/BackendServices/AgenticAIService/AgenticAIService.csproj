@@ -1,0 +1,42 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="ReportSenderService\**" />
+    <Content Remove="ReportSenderService\**" />
+    <EmbeddedResource Remove="ReportSenderService\**" />
+    <None Remove="ReportSenderService\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="AIServices\AzureOpenAIReportService.cs" />
+    <Compile Remove="AIServices\IAzureOpenAIReportService.cs" />
+    <Compile Remove="AIServices\ReportTemplateService.cs" />
+    <Compile Remove="Connectors\AzureAIAgentClient.cs" />
+    <Compile Remove="Connectors\ReportingDataService.cs" />
+    <Compile Remove="Models\Azure\UnifiedReportModel.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Remove="config.json" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Http" Version="8.0.0" />
+    <PackageReference Include="Microsoft.TeamFoundationServer.Client" Version="19.225.1" />
+    <PackageReference Include="Microsoft.TeamFoundationServer.ExtendedClient" Version="19.225.1" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
+    <PackageReference Include="OpenAI" Version="2.7.0" />
+    <PackageReference Include="QuestPDF" Version="2025.7.4" />
+    <PackageReference Include="RazorLight" Version="2.3.1" />
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.0" />
+    <PackageReference Include="TfsTestAPI" Version="1.0.4" />
+  </ItemGroup>
+
+</Project>

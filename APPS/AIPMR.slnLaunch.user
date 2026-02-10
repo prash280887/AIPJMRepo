@@ -1,0 +1,19 @@
+[
+  {
+    "Name": "New Profile",
+    "Projects": [
+      {
+        "Path": "BackendServices\\AgenticAIService\\AgenticAIService.csproj",
+        "Action": "Start"
+      },
+      {
+        "Path": "BackendServices\\ReportingService\\ReportingService.csproj",
+        "Action": "Start"
+      },
+      {
+        "Path": "BackendServices\\WebAPIService\\WebApiService.csproj",
+        "Action": "Start"
+      }
+    ]
+  }
+]
